@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Oko Systems — Запросить демонстрацию</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #5B6AF9; --accent-light: #7B87FF; --accent-soft: rgba(91,106,249,0.08);
+      --bg-dark: #08080E; --bg-light: #F9F9FB; --bg-white: #fff;
+      --text-dark: #0C0C14; --text-sec: #6B7280; --text-muted: #9CA3AF;
+      --border: #E5E7EB; --border-dark: rgba(255,255,255,0.08);
+      --success: #10B981;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Manrope', system-ui, sans-serif; font-size: 16px; font-weight: 500; line-height: 1.55; color: var(--text-dark); background: var(--bg-white); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+    /* NAV */
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: 64px; display: flex; align-items: center; background: rgba(8,8,14,0.9); backdrop-filter: blur(12px); box-shadow: 0 1px 0 var(--border-dark); }
+    .nav-inner { width: 100%; max-width: 1000px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: #fff; font-size: 17px; font-weight: 800; }
+    .nav-logo-icon { width: 30px; height: 30px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; color: #fff; }
+    .nav-back { color: rgba(255,255,255,0.5); font-size: 13px; font-weight: 600; text-decoration: none; transition: color 0.2s; }
+    .nav-back:hover { color: #fff; }
+
+    /* MAIN */
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 100px 24px 60px; background: var(--bg-light); }
+    .page-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; max-width: 880px; width: 100%; }
+    @media(max-width: 760px) { .page-wrap { grid-template-columns: 1fr; gap: 40px; } .info-side { text-align: center; } }
+
+    /* INFO */
+    .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 16px; }
+    .info-title { font-size: clamp(28px, 4vw, 40px); font-weight: 900; line-height: 1.06; letter-spacing: -0.025em; color: var(--text-dark); margin-bottom: 16px; }
+    .info-sub { font-size: 15px; color: var(--text-sec); line-height: 1.6; margin-bottom: 32px; }
+    .info-points { display: flex; flex-direction: column; gap: 14px; }
+    .info-point { display: flex; align-items: flex-start; gap: 12px; }
+    .info-point-icon { width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    .info-point-text h4 { font-size: 14px; font-weight: 800; margin-bottom: 2px; }
+    .info-point-text p { font-size: 13px; color: var(--text-sec); }
+
+    /* FORM CARD */
+    .form-card { background: var(--bg-white); border: 1px solid var(--border); border-radius: 24px; padding: 36px; box-shadow: 0 4px 24px rgba(0,0,0,0.06); }
+    .form-card-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+    .form-card-sub { font-size: 13px; color: var(--text-sec); margin-bottom: 24px; }
+    .form { display: flex; flex-direction: column; gap: 14px; }
+    .form label { font-size: 12px; font-weight: 700; color: var(--text-sec); display: block; margin-bottom: 6px; }
+    .form input { width: 100%; height: 44px; padding: 0 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 15px; font-weight: 500; color: var(--text-dark); background: #fff; outline: none; transition: border-color 0.2s; }
+    .form input:focus { border-color: var(--accent); }
+    .form-submit { height: 48px; background: var(--accent); color: #fff; border: none; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 4px; width: 100%; }
+    .form-submit:hover { background: var(--accent-light); }
+    .form-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px; }
+    .form-success { display: none; text-align: center; padding: 20px 0; }
+    .form-success .check { font-size: 44px; margin-bottom: 14px; }
+    .form-success h3 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .form-success p { font-size: 14px; color: var(--text-sec); }
+
+    /* FOOTER */
+    footer { background: var(--bg-dark); border-top: 1px solid var(--border-dark); padding: 28px 0; }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .footer-copy { font-size: 13px; color: rgba(255,255,255,0.25); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: rgba(255,255,255,0.35); text-decoration: none; transition: color 0.2s; }
+    .footer-links a:hover { color: rgba(255,255,255,0.7); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">
+      <div class="nav-logo-icon">О</div>
+      Oko Systems
+    </a>
+    <a href="/" class="nav-back">← На главную</a>
+  </div>
+</nav>
+
+<main>
+  <div class="page-wrap">
+    <div class="info-side">
+      <div class="eyebrow">Демонстрация</div>
+      <h1 class="info-title">Покажем систему<br>в действии</h1>
+      <p class="info-sub">Оставьте контакт — проведём персональную демонстрацию Oko Systems на ваших данных или тестовых примерах.</p>
+      <div class="info-points">
+        <div class="info-point">
+          <div class="info-point-icon">⏱️</div>
+          <div class="info-point-text">
+            <h4>30–45 минут</h4>
+            <p>Покажем все ключевые функции системы</p>
+          </div>
+        </div>
+        <div class="info-point">
+          <div class="info-point-icon">🎯</div>
+          <div class="info-point-text">
+            <h4>Под ваш отдел продаж</h4>
+            <p>Демо настроим под специфику вашего бизнеса</p>
+          </div>
+        </div>
+        <div class="info-point">
+          <div class="info-point-icon">🔗</div>
+          <div class="info-point-text">
+            <h4>Подключение за 5 минут</h4>
+            <p>Сразу покажем как работает интеграция с Bitrix24</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-side">
+      <div class="form-card">
+        <div class="form-card-title">Запросить демо</div>
+        <div class="form-card-sub">Свяжемся в течение рабочего дня</div>
+        <form class="form" id="demoForm" onsubmit="submitDemo(event)">
+          <div>
+            <label>Ваше имя</label>
+            <input name="name" type="text" required placeholder="Алмаз Сейткалиев">
+          </div>
+          <div>
+            <label>Компания</label>
+            <input name="company" type="text" required placeholder="ТОО «Ваша компания»">
+          </div>
+          <div>
+            <label>Телефон</label>
+            <input name="phone" type="tel" required placeholder="+7 777 000 00 00">
+          </div>
+          <button type="submit" class="form-submit" id="demoSubmitBtn">Запросить демонстрацию →</button>
+        </form>
+        <div class="form-note">Без спама. Только по делу.</div>
+        <div class="form-success" id="demoSuccess">
+          <div class="check">✅</div>
+          <h3>Заявка отправлена!</h3>
+          <p>Мы свяжемся с вами в ближайшее время и согласуем удобное время.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <a href="/" class="nav-logo" style="color:rgba(255,255,255,0.5);font-size:14px;">
+        <div class="nav-logo-icon" style="width:24px;height:24px;font-size:11px;">О</div>
+        Oko Systems
+      </a>
+      <div class="footer-copy">© 2026 Oko Systems</div>
+      <div class="footer-links">
+        <a href="/legal/license">Лицензия</a>
+        <a href="/legal/privacy">Конфиденциальность</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  async function submitDemo(e) {
+    e.preventDefault();
+    const form = e.target;
+    const btn = document.getElementById('demoSubmitBtn');
+    const data = Object.fromEntries(new FormData(form));
+    btn.textContent = 'Отправляем...';
+    btn.disabled = true;
+    try {
+      const res = await fetch('/api/demo-request', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        form.style.display = 'none';
+        document.querySelector('.form-note').style.display = 'none';
+        document.getElementById('demoSuccess').style.display = 'block';
+      } else { throw new Error(); }
+    } catch {
+      btn.textContent = 'Запросить демонстрацию →';
+      btn.disabled = false;
+      alert('Ошибка отправки. Напишите на support@salmetov.fun');
+    }
+  }
+</script>
+</body>
+</html>

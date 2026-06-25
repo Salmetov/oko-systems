@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#5B6AF9"/>
+  <!-- Bold "О" as two concentric ellipses (outer white, inner blue) matching font-weight:900 -->
+  <ellipse cx="16" cy="16.5" rx="9" ry="10" fill="white"/>
+  <ellipse cx="16" cy="16.5" rx="4.5" ry="5.8" fill="#5B6AF9"/>
+</svg>

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+<style>
+  @font-face {
+    font-family: 'Geist';
+    src: url('ui-dashboard/dist/assets/geist-cyrillic-wght-normal-CHSlOQsW.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  /* Tailwind-aligned palette */
+  :root {
+    --neutral-50:  #fafafa;
+    --neutral-100: #f5f5f5;
+    --neutral-200: #e5e5e5;
+    --neutral-300: #d4d4d4;
+    --neutral-400: #a3a3a3;
+    --neutral-500: #737373;
+    --neutral-600: #525252;
+    --neutral-700: #404040;
+    --neutral-800: #262626;
+    --neutral-900: #171717;
+    --neutral-950: #0a0a0a;
+    --blue-600:    #2563eb;
+    --blue-800:    #1e40af;
+    --blue-950:    #172554;
+    --green-400:   #4ade80;
+    --green-500:   #22c55e;
+    --green-600:   #16a34a;
+    --amber-400:   #facc15;
+    --amber-500:   #eab308;
+    --amber-600:   #d97706;
+    --red-400:     #f87171;
+    --red-500:     #ef4444;
+    --red-600:     #dc2626;
+  }
+
+  @page {
+    size: A4;
+    margin: 14mm 13mm 16mm 13mm;
+    @bottom-left {
+      content: "oko.systems";
+      font-family: 'Geist', sans-serif;
+      font-size: 7.5pt;
+      color: var(--neutral-400);
+    }
+    @bottom-center {
+      content: "{{ public_url }}";
+      font-family: 'Geist', sans-serif;
+      font-size: 7.5pt;
+      color: var(--neutral-400);
+    }
+    @bottom-right {
+      content: "стр. " counter(page) " / " counter(pages);
+      font-family: 'Geist', sans-serif;
+      font-size: 7.5pt;
+      color: var(--neutral-400);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    font-family: 'Geist', 'DejaVu Sans', sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.5;
+    color: var(--neutral-950);
+    margin: 0;
+    padding: 0;
+    background: white;
+  }
+
+  /* ── Top brand strip ─────────────────────────── */
+  .brand {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 5mm;
+    margin-bottom: 5mm;
+  }
+  .brand img { height: 11mm; }
+  .brand .domain { text-align: right; font-size: 8.5pt; }
+  .brand .domain .label {
+    display: block;
+    font-size: 6.5pt;
+    color: var(--neutral-400);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5mm;
+  }
+  .brand .domain .value { color: var(--neutral-700); font-weight: 500; }
+
+  /* ── Hero (dark, web-style) ──────────────────── */
+  .hero {
+    background:
+      linear-gradient(135deg, rgba(23,37,84,0.35) 0%, transparent 55%),
+      linear-gradient(180deg, var(--neutral-900) 0%, var(--neutral-900) 100%);
+    color: white;
+    border-radius: 4mm;
+    padding: 7mm 7mm 6mm 7mm;
+    margin-bottom: 7mm;
+  }
+  .hero-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8mm;
+  }
+  .hero-left { flex: 1; }
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5mm;
+    font-size: 7.5pt;
+    color: var(--neutral-400);
+    margin-bottom: 2mm;
+  }
+  .status .dot {
+    width: 1.5mm; height: 1.5mm;
+    border-radius: 50%;
+    background: var(--green-500);
+  }
+
+  .identity {
+    display: flex;
+    align-items: center;
+    gap: 4mm;
+  }
+  .avatar {
+    width: 14mm; height: 14mm;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue-600), var(--blue-800));
+    color: white;
+    font-weight: 700;
+    font-size: 13pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .identity .name {
+    font-size: 17pt;
+    font-weight: 700;
+    color: white;
+    line-height: 1.15;
+    margin-bottom: 1mm;
+  }
+  .identity .deal {
+    font-size: 9pt;
+    color: var(--neutral-400);
+  }
+  .identity .deal span + span:before { content: " · "; color: var(--neutral-700); }
+
+  /* Score block */
+  .score-wrap {
+    text-align: right;
+    flex-shrink: 0;
+    min-width: 30mm;
+  }
+  .score {
+    font-size: 36pt;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .score.score-green  { color: var(--green-400); }
+  .score.score-yellow { color: var(--amber-400); }
+  .score.score-red    { color: var(--red-400); }
+  .score-of {
+    font-size: 8pt;
+    color: var(--neutral-500);
+    margin-top: 1mm;
+  }
+
+  /* Block bars (inside hero) */
+  .blocks {
+    margin-top: 6mm;
+    padding-top: 5mm;
+    border-top: 1px solid var(--neutral-800);
+  }
+  .block-row {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    margin-bottom: 2mm;
+    font-size: 8.5pt;
+  }
+  .block-row .name { flex: 1; color: var(--neutral-300); }
+  .block-row .bar {
+    width: 38mm;
+    height: 1.2mm;
+    background: var(--neutral-800);
+    border-radius: 1mm;
+    overflow: hidden;
+  }
+  .block-row .bar > div { height: 100%; border-radius: 1mm; }
+  .bar-green  { background: var(--green-500); }
+  .bar-yellow { background: var(--amber-500); }
+  .bar-red    { background: var(--red-500); }
+  .block-row .pct {
+    width: 9mm;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--neutral-300);
+    font-weight: 500;
+  }
+
+  /* Meta strip below hero */
+  .meta {
+    display: flex;
+    gap: 10mm;
+    padding: 4mm 5mm;
+    background: var(--neutral-50);
+    border: 1px solid var(--neutral-200);
+    border-radius: 3mm;
+    margin-bottom: 7mm;
+    font-size: 8.5pt;
+  }
+  .meta-cell { flex: 1; }
+  .meta-cell .label {
+    display: block;
+    font-size: 6.5pt;
+    color: var(--neutral-400);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.8mm;
+  }
+  .meta-cell .value { color: var(--neutral-800); font-weight: 500; }
+
+  /* ── Summary ───────────────────────────────── */
+  .summary {
+    background: var(--neutral-50);
+    border-left: 2pt solid var(--blue-600);
+    border-radius: 0 2mm 2mm 0;
+    padding: 4mm 5mm;
+    margin-bottom: 7mm;
+    font-size: 9.5pt;
+    color: var(--neutral-800);
+    line-height: 1.6;
+  }
+
+  /* ── Section heading ───────────────────────── */
+  h2 {
+    font-size: 8pt;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin: 0 0 4mm 0;
+    padding-bottom: 2mm;
+    border-bottom: 1px solid var(--neutral-200);
+  }
+  h2 .count { color: var(--neutral-400); font-weight: 500; }
+
+  /* ── Problem zones ─────────────────────────── */
+  .block-group { margin-bottom: 6mm; }
+  .block-group-head {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2.5mm;
+    padding-left: 2mm;
+  }
+  .problem {
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-left: 2.5pt solid var(--red-500);
+    border-radius: 2mm;
+    padding: 4mm 5mm;
+    margin-bottom: 2.5mm;
+    page-break-inside: avoid;
+  }
+  .problem.warn {
+    background: #fffbeb;
+    border-color: #fde68a;
+    border-left-color: var(--amber-500);
+  }
+  .problem .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 4mm;
+    margin-bottom: 2mm;
+  }
+  .problem .mod-name {
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: var(--neutral-950);
+    flex: 1;
+  }
+
+  /* Pill — score badge */
+  .pill {
+    display: inline-block;
+    padding: 0.6mm 2.2mm;
+    border-radius: 99mm;
+    font-size: 8pt;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+    line-height: 1.4;
+  }
+  .pill-green  { background: #dcfce7; color: var(--green-600); }
+  .pill-yellow { background: #fef3c7; color: var(--amber-600); }
+  .pill-red    { background: #fee2e2; color: var(--red-600); }
+
+  .field-label {
+    font-size: 6.5pt;
+    color: var(--neutral-400);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 3mm;
+    margin-bottom: 1mm;
+  }
+  .field-text {
+    font-size: 9pt;
+    color: var(--neutral-800);
+    line-height: 1.55;
+  }
+
+  .empty-zones {
+    display: flex;
+    align-items: center;
+    gap: 3mm;
+    padding: 5mm;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 3mm;
+    color: var(--green-600);
+    font-size: 10pt;
+    font-weight: 500;
+  }
+  .empty-zones .check {
+    width: 5mm; height: 5mm;
+    border-radius: 50%;
+    background: var(--green-500);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9pt;
+    font-weight: 800;
+  }
+
+  /* ── Missing card fields ─────────────────────── */
+  .missing-wrap {
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+    border-left: 2.5pt solid var(--red-500);
+    border-radius: 2mm;
+    padding: 4mm 5mm;
+    margin-bottom: 7mm;
+  }
+  .missing-wrap .label {
+    display: block;
+    font-size: 7pt;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2.5mm;
+  }
+  .missing-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2mm;
+  }
+  .missing-tag {
+    display: inline-block;
+    padding: 0.8mm 2.5mm;
+    border-radius: 99mm;
+    font-size: 8.5pt;
+    border: 1px solid #fca5a5;
+    color: var(--red-600);
+    background: white;
+  }
+
+  /* ── Modules table ──────────────────────────── */
+  .modules-block { margin-bottom: 5mm; page-break-inside: auto; }
+  .modules-block-head {
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 2mm;
+    padding-left: 2mm;
+  }
+  table.modules {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8.5pt;
+    border: 1px solid var(--neutral-200);
+    border-radius: 2mm;
+    overflow: hidden;
+  }
+  table.modules td {
+    padding: 1.8mm 2.5mm;
+    border-bottom: 1px solid var(--neutral-100);
+    vertical-align: middle;
+    background: white;
+  }
+  table.modules tbody tr:nth-child(even) td { background: var(--neutral-50); }
+  table.modules tbody tr:last-child td { border-bottom: none; }
+  table.modules tr { page-break-inside: avoid; }
+  table.modules td.module { font-weight: 500; color: var(--neutral-900); }
+  table.modules td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  table.modules td.weight { color: var(--neutral-500); }
+</style>
+</head>
+<body>
+
+<div class="brand">
+  <img src="logo_exact.svg" alt="OKO Systems">
+  {% if bitrix_domain %}
+  <div class="domain">
+    <span class="label">Bitrix24 портал</span>
+    <span class="value">{{ bitrix_domain }}</span>
+  </div>
+  {% endif %}
+</div>
+
+<div class="hero">
+  <div class="hero-row">
+    <div class="hero-left">
+      <div class="status"><span class="dot"></span>Анализ завершён</div>
+      <div class="identity">
+        <div class="avatar">{{ employee_initials }}</div>
+        <div>
+          <div class="name">{{ employee_name }}</div>
+          <div class="deal">
+            {% if deal_id %}<span>Сделка #{{ deal_id }}</span>{% endif %}
+            {% if client_name %}<span>{{ client_name }}</span>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="score-wrap">
+      <div class="score score-{{ score_class }}">{{ overall_score }}</div>
+      <div class="score-of">из 100</div>
+    </div>
+  </div>
+
+  {% if blocks %}
+  <div class="blocks">
+    {% for b in blocks %}
+    <div class="block-row">
+      <span class="name">{{ b.name }}</span>
+      <div class="bar"><div class="bar-{{ b.color }}" style="width: {{ b.pct }}%"></div></div>
+      <span class="pct">{{ b.pct }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="meta">
+  {% if call_date_str %}
+  <div class="meta-cell">
+    <span class="label">Дата звонка</span>
+    <span class="value">{{ call_date_str }}</span>
+  </div>
+  {% endif %}
+  <div class="meta-cell">
+    <span class="label">Сформирован</span>
+    <span class="value">{{ generated_at_str }}</span>
+  </div>
+  <div class="meta-cell">
+    <span class="label">Сотрудник</span>
+    <span class="value">{{ employee_name }}</span>
+  </div>
+</div>
+
+{% if final_summary %}
+<div class="summary">{{ final_summary }}</div>
+{% endif %}
+
+<h2>
+  Проблемные зоны
+  {% if failing %}<span class="count">— {{ failing|length }} из {{ modules|length }} модулей</span>{% endif %}
+</h2>
+{% if failing_by_block %}
+  {% for grp in failing_by_block %}
+  <div class="block-group">
+    <div class="block-group-head">{{ grp.block_name }}</div>
+    {% for m in grp.modules %}
+    <div class="problem{% if m.color == 'yellow' %} warn{% endif %}">
+      <div class="head">
+        <div class="mod-name">{{ m.module_name }}</div>
+        <span class="pill pill-{{ m.color }}">{{ m.ratio_pct }}%</span>
+      </div>
+      {% if m.observation and m.observation != '—' %}
+      <div class="field-label">Наблюдение</div>
+      <div class="field-text">{{ m.observation }}</div>
+      {% endif %}
+      {% if m.task and m.task != '—' %}
+      <div class="field-label">Задача</div>
+      <div class="field-text">{{ m.task }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+{% else %}
+<div class="empty-zones">
+  <span class="check">✓</span>
+  Проблемных зон не выявлено
+</div>
+{% endif %}
+
+{% if missing_fields %}
+<h2 style="margin-top: 8mm;">Не заполнены поля карточки</h2>
+<div class="missing-wrap">
+  <div class="missing-tags">
+    {% for f in missing_fields %}
+    <span class="missing-tag">{{ f }}</span>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<h2 style="margin-top: 8mm;">Все модули</h2>
+{% for grp in modules_by_block %}
+<div class="modules-block">
+  <div class="modules-block-head">{{ grp.block_name }}</div>
+  <table class="modules">
+    <tbody>
+      {% for m in grp.modules %}
+      <tr>
+        <td class="module">{{ m.module_name }}</td>
+        <td class="num" style="width: 16mm"><span class="pill pill-{{ m.color }}">{{ m.ratio_pct }}%</span></td>
+        <td class="num weight" style="width: 12mm">{{ m.module_weight_percent }}%</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+</body>
+</html>
