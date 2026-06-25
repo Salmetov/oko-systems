@@ -6,10 +6,12 @@ import json
 import os
 import re
 import secrets
+import signal
 import threading
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
 from html import escape as html_escape, unescape
@@ -22,6 +24,7 @@ from urllib.request import Request, urlopen
 
 import psycopg2
 import psycopg2.extras
+import psycopg2.pool
 import requests
 import socket
 from requests.adapters import HTTPAdapter
@@ -3404,10 +3407,81 @@ def require_admin_token_from_body(data: dict) -> tuple[bool, str]:
     return True, ''
 
 
+_DB_POOL = None
+_DB_POOL_LOCK = threading.Lock()
+
+
+def _get_db_pool() -> psycopg2.pool.ThreadedConnectionPool:
+    """Lazily-initialised process-wide connection pool.
+
+    Replaces the previous "open a fresh psycopg2 connection per call" pattern, which under
+    concurrent HTTP requests + background workers could exhaust PostgreSQL's max_connections.
+    Bounds are configurable via DB_POOL_MIN / DB_POOL_MAX.
+    """
+    global _DB_POOL
+    if _DB_POOL is None:
+        with _DB_POOL_LOCK:
+            if _DB_POOL is None:
+                _DB_POOL = psycopg2.pool.ThreadedConnectionPool(
+                    int(os.getenv('DB_POOL_MIN', '2')),
+                    int(os.getenv('DB_POOL_MAX', '20')),
+                    dsn=DATABASE_URL,
+                )
+    return _DB_POOL
+
+
+def close_db_pool():
+    """Close all pooled connections — called on graceful shutdown."""
+    global _DB_POOL
+    pool, _DB_POOL = _DB_POOL, None
+    if pool is not None:
+        try:
+            pool.closeall()
+        except Exception:
+            pass
+
+
+@contextmanager
 def db_conn():
-    conn = psycopg2.connect(DATABASE_URL)
+    """Lease an autocommit connection from the pool and return it on exit.
+
+    Drop-in for the historical ``with db_conn() as conn`` call sites: same usage, but the
+    connection is now leased from the pool and returned (not leaked to GC). A connection that
+    raises inside the block is discarded instead of being returned dirty to the pool.
+    """
+    pool = _get_db_pool()
+    conn = pool.getconn()
     conn.autocommit = True
-    return conn
+    try:
+        yield conn
+    except Exception:
+        pool.putconn(conn, close=True)
+        raise
+    else:
+        pool.putconn(conn)
+
+
+@contextmanager
+def db_tx():
+    """Lease a transactional (autocommit=False) pooled connection.
+
+    For the few multi-statement operations that must commit/rollback as a unit. Commits on
+    clean exit, rolls back and discards the connection on error.
+    """
+    pool = _get_db_pool()
+    conn = pool.getconn()
+    conn.autocommit = False
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        try:
+            conn.rollback()
+        finally:
+            pool.putconn(conn, close=True)
+        raise
+    else:
+        pool.putconn(conn)
 
 
 def init_db():
@@ -4112,8 +4186,7 @@ def delete_employee_data(operator_id: int) -> dict:
     oid = safe_int(operator_id)
     if not oid:
         return {'deleted_exports': 0, 'deleted_batches': 0, 'employee_name': ''}
-    with psycopg2.connect(DATABASE_URL) as conn:
-        conn.autocommit = False
+    with db_tx() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """
@@ -5491,8 +5564,7 @@ def delete_analysis_batch(batch_id: int, user_id: int) -> bool:
     uid = safe_int(user_id)
     if not bid or not uid:
         return False
-    with psycopg2.connect(DATABASE_URL) as conn:
-        conn.autocommit = False
+    with db_tx() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("SELECT id FROM analysis_batches WHERE id=%s AND user_id=%s", (bid, uid))
             if not cur.fetchone():
@@ -10123,6 +10195,18 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, {'ok': True, 'service': 'okosystems'})
             return
 
+        if parsed.path in ('/readyz', '/readiness'):
+            # Liveness says "process is up"; readiness says "can actually serve" — i.e. the DB
+            # is reachable. Load balancers / UptimeRobot should probe this, not /health.
+            try:
+                with db_conn() as _c, _c.cursor() as _cur:
+                    _cur.execute('SELECT 1')
+                    _cur.fetchone()
+                self._json(200, {'ok': True, 'db': 'up'})
+            except Exception as exc:
+                self._json(503, {'ok': False, 'db': 'down', 'error': str(exc)[:200]})
+            return
+
         if parsed.path in ('/favicon.ico', '/favicon.svg', '/favicon-32.png', '/favicon-192.png', '/apple-touch-icon.png'):
             fname = parsed.path.lstrip('/')
             fpath = Path(__file__).parent / fname
@@ -11028,4 +11112,20 @@ if __name__ == '__main__':
     ensure_qa_worker()
     ensure_token_refresh_worker()
     server = ThreadingHTTPServer((HOST, PORT), Handler)
-    server.serve_forever()
+
+    def _graceful_shutdown(signum, _frame):
+        # serve_forever() runs in this (main) thread, so shutdown() must be invoked from another
+        # thread to avoid a self-deadlock. In-flight background analyses are protected separately
+        # by the re-queue-on-restart logic in init_db().
+        print(f'received signal {signum}; shutting down gracefully...', flush=True)
+        threading.Thread(target=server.shutdown, daemon=True).start()
+
+    signal.signal(signal.SIGTERM, _graceful_shutdown)
+    signal.signal(signal.SIGINT, _graceful_shutdown)
+
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()
+        close_db_pool()
+        print('shutdown complete', flush=True)
