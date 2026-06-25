@@ -10,10 +10,10 @@
 
 ## Раскладка
 
-- **OLD = старый сервер** (Нью-Джерси): IP `78.111.88.140`, всё работает прямо сейчас
+- **OLD = старый сервер** (Нью-Джерси): IP `<old-server-ip>`, всё работает прямо сейчас
 - **NEW = новый сервер** (Алматы): чистая Ubuntu 24.04, IP — узнать у пользователя в начале миграции
 
-Все `OLD_IP` ниже — это `78.111.88.140`. Все команды выполняются на NEW, если не сказано иное.
+Все `OLD_IP` ниже — это `<old-server-ip>`. Все команды выполняются на NEW, если не сказано иное.
 
 ## Что переносим / не переносим
 
@@ -76,7 +76,7 @@ echo "<публичный ключ из вывода выше>" >> /root/.ssh/au
 Проверка с NEW:
 
 ```bash
-ssh -i /root/.ssh/migration_key root@78.111.88.140 "hostname && whoami"
+ssh -i /root/.ssh/migration_key root@<old-server-ip> "hostname && whoami"
 ```
 
 Должно вернуть имя старого сервера и `root`. Дальше для удобства добавь в `~/.ssh/config` на NEW:
@@ -84,7 +84,7 @@ ssh -i /root/.ssh/migration_key root@78.111.88.140 "hostname && whoami"
 ```bash
 cat >> /root/.ssh/config <<'EOF'
 Host old
-    HostName 78.111.88.140
+    HostName <old-server-ip>
     User root
     IdentityFile /root/.ssh/migration_key
 EOF
@@ -117,7 +117,7 @@ chmod 600 /root/okosystems/.env          # права на секреты
 ```bash
 ssh old cat /etc/caddy/Caddyfile > /etc/caddy/Caddyfile
 # на старом уже была убрана строка bind, но если вдруг вернулась — снести:
-sed -i '/^    bind 78\.111\.88\.140$/d' /etc/caddy/Caddyfile
+sed -i '/^    bind <old-server-ip>$/d' /etc/caddy/Caddyfile
 caddy validate --config /etc/caddy/Caddyfile
 ```
 
@@ -257,7 +257,7 @@ curl -I https://ai.salmetov.fun/
 
 - **rsync падает по разрешениям** — на старом сервере `chmod 600 /root/.ssh/authorized_keys`, проверить SELinux/AppArmor (обычно неактуально для Ubuntu)
 - **`pg_restore` ругается на роль** — `CREATE ROLE <missing_role>;` на NEW и повторить с `--no-owner`
-- **Caddy падает** — проверить, что `bind 78.111.88.140` точно убран; смотреть `journalctl -u caddy -n 50`
+- **Caddy падает** — проверить, что `bind <old-server-ip>` точно убран; смотреть `journalctl -u caddy -n 50`
 - **Сертификат не выдаётся** — DNS ещё не пропагировал, или фаервол хостера блокирует `:80`. Проверить `curl http://ai.salmetov.fun/.well-known/acme-challenge/test` снаружи, должен попадать на NEW
 - **Совсем плохо** — OLD ещё жив (Шаг 12 не делал) → откатить DNS на OLD_IP, разбираться без давления
 
