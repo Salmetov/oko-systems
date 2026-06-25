@@ -177,54 +177,15 @@ TG_SESSION_COOKIE = APP_SESSION_COOKIE
 TG_SESSION_MAX_AGE_SEC = APP_SESSION_MAX_AGE_SEC
 
 
-def guess_content_type(path: Path) -> str:
-    suffix = path.suffix.lower()
-    if suffix == '.html':
-        return 'text/html; charset=utf-8'
-    if suffix == '.js':
-        return 'application/javascript; charset=utf-8'
-    if suffix == '.css':
-        return 'text/css; charset=utf-8'
-    if suffix == '.json':
-        return 'application/json; charset=utf-8'
-    if suffix == '.svg':
-        return 'image/svg+xml'
-    if suffix == '.png':
-        return 'image/png'
-    if suffix in ('.jpg', '.jpeg'):
-        return 'image/jpeg'
-    if suffix == '.ico':
-        return 'image/x-icon'
-    if suffix == '.woff2':
-        return 'font/woff2'
-    return 'application/octet-stream'
-
-
-def now_ts() -> int:
-    return int(time.time())
-def parse_iso_datetime(value: str, fallback: datetime | None = None) -> datetime | None:
-    try:
-        return datetime.fromisoformat(str(value).replace('Z', '+00:00'))
-    except Exception:
-        return fallback
-
-
-def is_placeholder_text(value) -> bool:
-    txt = str(value or '').strip().casefold()
-    return txt in {'', '<не доступно>', '<нет>', '—', 'none', 'null'}
-
-
-def normalize_module_title(title: str) -> str:
-    raw = str(title or '')
-    cleaned = raw.replace('* (см. под чек-листом)', '').strip()
-    cleaned = re.sub(r'\s{2,}', ' ', cleaned)
-    return cleaned or raw.strip() or '<не доступно>'
-
-
-def module_anchor_id(title: str) -> str:
-    normalized = normalize_module_title(title)
-    digest = hashlib.md5(normalized.encode('utf-8')).hexdigest()[:12]
-    return f"mod-{digest}"
+# Pure stdlib-only helpers now live in oko_utils.py (extracted to keep app.py focused).
+from oko_utils import (
+    guess_content_type,
+    now_ts,
+    parse_iso_datetime,
+    is_placeholder_text,
+    normalize_module_title,
+    module_anchor_id,
+)
 
 
 SUPPORTED_UI_LANGS = {'ru', 'kk'}
