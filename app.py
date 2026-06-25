@@ -30,38 +30,8 @@ import socket
 from requests.adapters import HTTPAdapter
 
 
-# Linux TCP_USER_TIMEOUT (kernel-level dead-connection killer). Without this, requests' read
-# timeout can be defeated by TCP keep-alive ACKs from the AWS us-east-1 ELB even when no
-# response data is flowing — a connection looks "alive" while delivering zero progress.
-# Setting this socket option makes the kernel abort the connection if a sent segment hasn't
-# been ACKed within the given milliseconds, regardless of keep-alives.
-_TCP_USER_TIMEOUT = 18  # SOL constant on Linux
-_TCP_USER_TIMEOUT_MS = int(os.getenv('TCP_USER_TIMEOUT_MS', '30000'))
-
-
-class _DeadConnectionGuardAdapter(HTTPAdapter):
-    def init_poolmanager(self, *args, **kwargs):
-        # Only Linux supports TCP_USER_TIMEOUT — silently no-op elsewhere.
-        try:
-            kwargs['socket_options'] = [
-                (socket.IPPROTO_TCP, _TCP_USER_TIMEOUT, _TCP_USER_TIMEOUT_MS),
-            ]
-        except Exception:
-            pass
-        return super().init_poolmanager(*args, **kwargs)
-
-
-def _build_resilient_session() -> requests.Session:
-    s = requests.Session()
-    # Bigger pool: parallel STT submits + Claude calls + Bitrix calls share this session;
-    # a small default (10/10) becomes a bottleneck under load.
-    adapter = _DeadConnectionGuardAdapter(pool_connections=32, pool_maxsize=64)
-    s.mount('https://', adapter)
-    s.mount('http://', adapter)
-    return s
-
-
-HTTP_SESSION = _build_resilient_session()
+# Shared resilient HTTP client (pooled requests.Session + TCP_USER_TIMEOUT) lives in oko_http.py.
+from oko_http import HTTP_SESSION
 
 # Configuration (env-derived settings) now lives in oko_config.py.
 from oko_config import *  # noqa: F401,F403 -- flat re-export preserves existing references
